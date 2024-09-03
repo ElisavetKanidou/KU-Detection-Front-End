@@ -1,4 +1,4 @@
-import React, { useState, Dispatch, SetStateAction } from "react";
+import React, { useState, useEffect, Dispatch, SetStateAction } from "react";
 import axios from "axios";
 import { FileChange, Commit, AnalysisResult } from "@/lib/types";
 import { ButtonLoading } from "@/components/ButtonLoading";
@@ -13,6 +13,8 @@ interface FormProps {
   loading: boolean;
   setLoading: (loading: boolean) => void;
   setAnalysisResults: Dispatch<SetStateAction<AnalysisResult[]>>;
+  initialRepoUrl?: string; // Optional prop for initial repo URL
+  setResultsOfAnalysis: Dispatch<SetStateAction<boolean>>;
 }
 
 const Form: React.FC<FormProps> = ({
@@ -23,10 +25,18 @@ const Form: React.FC<FormProps> = ({
   loading,
   setLoading,
   setAnalysisResults,
+  initialRepoUrl = "", // Default to empty string if not provided
+  setResultsOfAnalysis,
 }) => {
-  const [repoUrl, setRepoUrl] = useState<string>("");
+  const [repoUrl, setRepoUrl] = useState<string>(initialRepoUrl);
   const [commitLimit, setCommitLimit] = useState<string>("30");
   const [analysisStarted, setAnalysisStarted] = useState<boolean>(false);
+
+
+  // Update repoUrl if initialRepoUrl prop changes
+  useEffect(() => {
+    setRepoUrl(initialRepoUrl);
+  }, [initialRepoUrl]);
 
   const handleFetchCommits = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -34,6 +44,7 @@ const Form: React.FC<FormProps> = ({
     setCommits([]);
     setAnalysisResults([]);
     setProgress(0);
+    setResultsOfAnalysis(true);
 
     try {
       const limit = commitLimit ? parseInt(commitLimit) : null;
@@ -79,6 +90,7 @@ const Form: React.FC<FormProps> = ({
     setAnalysisStarted(true);
     setProgress(0);
     setAnalysisResults([]);
+    setResultsOfAnalysis(true);
 
     const eventSource = new EventSource(
       `http://localhost:5000/analyze?repo_url=${encodeURIComponent(repoUrl)}`
@@ -115,14 +127,12 @@ const Form: React.FC<FormProps> = ({
           <label htmlFor="repoUrl" className="block text-gray-700 mb-2">
             GitHub Repository URL
           </label>
-          <input
-            type="text"
+          <div
             id="repoUrl"
-            value={repoUrl}
-            onChange={(e) => setRepoUrl(e.target.value)}
-            className="w-full p-2 border border-gray-300 rounded"
-            required
-          />
+            className="w-full p-2 border border-gray-300 rounded bg-gray-100"
+          >
+            {repoUrl}
+          </div>
         </div>
         <div>
           <label htmlFor="commitLimit" className="block text-gray-700 mb-2">
@@ -159,7 +169,3 @@ const Form: React.FC<FormProps> = ({
 };
 
 export default Form;
-
-
-
-
