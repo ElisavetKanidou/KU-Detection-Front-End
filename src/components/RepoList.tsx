@@ -14,11 +14,19 @@ interface RepoListProps {
   repos: Repo[];
   onSelectAddRepo: () => void;
   onEditRepo: (repo: Repo) => void;
-  onSelectRepo: (repoName: string, repoUrl: string) => void; // Handler for selecting a repo with two parameters
+  onDeleteRepo: (repoName: string) => void; // Add delete handler
+  onSelectRepo: (repoName: string, repoUrl: string) => void;
   selectedRepo: string | null;
 }
 
-const RepoList: React.FC<RepoListProps> = ({ repos, onSelectAddRepo, onEditRepo, onSelectRepo, selectedRepo }) => {
+const RepoList: React.FC<RepoListProps> = ({
+  repos,
+  onSelectAddRepo,
+  onEditRepo,
+  onDeleteRepo, // Include delete handler in props
+  onSelectRepo,
+  selectedRepo,
+}) => {
   return (
     <div className="flex justify-start p-6">
       <div className="w-full max-w-md">
@@ -34,23 +42,30 @@ const RepoList: React.FC<RepoListProps> = ({ repos, onSelectAddRepo, onEditRepo,
               key={repo.name}
               className={`flex items-center justify-between p-4 border border-gray-200 rounded-lg shadow-sm ${
                 repo.name === selectedRepo ? 'bg-blue-100' : 'bg-white'
-              }`} // Highlight selected repo
+              }`}
             >
               <div className="flex items-center space-x-4">
                 <span className="text-lg font-semibold text-gray-900">{repo.name}</span>
                 <button
-                  onClick={() => onSelectRepo(repo.name, repo.url)} // Pass both repoName and repoUrl
+                  onClick={() => onSelectRepo(repo.name, repo.url)}
                   className="p-2 bg-gray-100 text-gray-600 rounded-full hover:bg-gray-200 transition duration-300"
                   aria-label={`Select ${repo.name}`}
                 >
-                  <i className="fas fa-eye text-lg"></i> {/* Eye icon to indicate selection */}
+                  <i className="fas fa-eye text-lg"></i>
                 </button>
                 <button
                   onClick={() => onEditRepo(repo)}
                   className="p-2 bg-gray-100 text-gray-600 rounded-full hover:bg-gray-200 transition duration-300"
                   aria-label={`Edit ${repo.name}`}
                 >
-                  <i className="fas fa-edit text-lg"></i> {/* Edit icon */}
+                  <i className="fas fa-edit text-lg"></i>
+                </button>
+                <button
+                  onClick={() => onDeleteRepo(repo.name)} // Call delete handler
+                  className="p-2 bg-gray-100 text-red-600 rounded-full hover:bg-red-200 transition duration-300"
+                  aria-label={`Delete ${repo.name}`}
+                >
+                  <i className="fas fa-trash text-lg"></i>
                 </button>
               </div>
             </li>
