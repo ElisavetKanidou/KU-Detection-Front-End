@@ -11,7 +11,14 @@ const Heatmap: React.FC<HeatmapProps> = ({ analysisResults }) => {
   const authors = Array.from(
     new Set(analysisResults.map((result) => result.author))
   );
-  const kus = Object.keys(analysisResults[0].detected_kus);
+
+  // Create a unique list of kus and sort them numerically
+  const kus = Array.from(new Set(analysisResults.flatMap((result) => Object.keys(result.detected_kus))))
+    .sort((a, b) => {
+      const numA = parseInt(a.replace(/\D/g, ''), 10);
+      const numB = parseInt(b.replace(/\D/g, ''), 10);
+      return numA - numB;
+    });
 
   const series = authors.map((author) => {
     const data = kus.map((ku) => {

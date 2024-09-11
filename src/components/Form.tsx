@@ -4,6 +4,7 @@ import { FileChange, Commit, AnalysisResult } from "@/lib/types";
 import { ButtonLoading } from "@/components/ButtonLoading";
 import { Button } from "@/components/ui/button";
 import { GitCommitVertical, BarChartHorizontal } from "lucide-react";
+import Heatmap from "@/components/Heatmap"; // Assuming you have a Heatmap component
 
 interface FormProps {
   commits: Commit[];
@@ -31,15 +32,56 @@ const Form: React.FC<FormProps> = ({
   const [repoUrl, setRepoUrl] = useState<string>(initialRepoUrl);
   const [commitLimit, setCommitLimit] = useState<string>("30");
   const [analysisStarted, setAnalysisStarted] = useState<boolean>(false);
-
+  const [heatmapData, setHeatmapData] = useState<AnalysisResult[]>([]);
+  const [loadingHeatmap, setLoadingHeatmap] = useState<boolean>(false);
+  const [heatmapMessage, setHeatmapMessage] = useState<string>("No data available");
+  const [initialHeatmapHandler, setInitialHeatmapHandler] = useState<boolean>(false);
 
   // Update repoUrl if initialRepoUrl prop changes
   useEffect(() => {
     setRepoUrl(initialRepoUrl);
   }, [initialRepoUrl]);
 
-  const handleFetchCommits = async (event: React.FormEvent) => {
-    event.preventDefault();
+  // Fetch heatmap data when repoUrl changes
+  useEffect(() => {
+    if (repoUrl) {
+      fetchHeatmapData(repoUrl);
+    }
+  }, [repoUrl]);
+
+  const fetchHeatmapData = async (repoURL: string) => {
+    setLoadingHeatmap(true);
+    setInitialHeatmapHandler(true);
+    try {
+      const response = await axios.get(`http://localhost:5000/analyzedb?repo_name=${getRepoNameFromUrl(repoURL)}`);
+      var analysisResults = response.data || [];
+      setLoadingHeatmap(false);
+
+      if (analysisResults.length > 0) {
+        setHeatmapData(analysisResults);
+      } else {
+        setHeatmapMessage("No analysis data found for this repository.");
+        setHeatmapData([])
+      }
+    } catch (error) {
+      console.error("Error fetching analysis data:", error);
+      setLoadingHeatmap(false);
+      setHeatmapMessage("Failed to fetch analysis data.");
+    }
+  };
+
+  function getRepoNameFromUrl(url: string) {
+    // Αφαιρούμε το ".git" αν υπάρχει στο τέλος του URL
+    const cleanedUrl = url.endsWith('.git') ? url.slice(0, -4) : url;
+
+    // Χρησιμοποιούμε την μέθοδο split για να πάρουμε το τελευταίο κομμάτι του URL
+    const parts = cleanedUrl.split('/');
+
+    // Επιστρέφουμε το τελευταίο στοιχείο, που είναι το όνομα του repository
+    return parts[parts.length - 1];
+  }
+
+  const handleFetchCommits = async () => {
     setLoading(true);
     setCommits([]);
     setAnalysisResults([]);
@@ -87,9 +129,10 @@ const Form: React.FC<FormProps> = ({
   };
 
   const handleExtractSkills = () => {
+    setInitialHeatmapHandler(false);
     setAnalysisStarted(true);
     setProgress(0);
-    setAnalysisResults([]);
+    setAnalysisResults(heatmapData);
     setResultsOfAnalysis(true);
 
     const eventSource = new EventSource(
@@ -120,9 +163,14 @@ const Form: React.FC<FormProps> = ({
     };
   };
 
+  const handleAnalysis = async () => {
+    await handleFetchCommits();
+    handleExtractSkills();
+  };
+
   return (
     <div className="flex flex-col gap-4 items-start">
-      <form onSubmit={handleFetchCommits} className="space-y-4 w-full">
+      <form onSubmit={(e) => e.preventDefault()} className="space-y-4 w-full">
         <div>
           <label htmlFor="repoUrl" className="block text-gray-700 mb-2">
             GitHub Repository URL
@@ -150,20 +198,30 @@ const Form: React.FC<FormProps> = ({
         {loading ? (
           <ButtonLoading />
         ) : (
-          <Button type="submit">
+          <Button
+            type="button"
+            onClick={handleAnalysis}
+            disabled={!repoUrl || analysisStarted}
+          >
             <GitCommitVertical className="mr-2 h-4 w-4" />
-            Fetch Commits
+            Start Analysis
           </Button>
         )}
       </form>
-      <Button
-        type="button"
-        onClick={handleExtractSkills}
-        disabled={!repoUrl || commits.length === 0 || analysisStarted}
-      >
-        <BarChartHorizontal className="mr-2 h-4 w-4" />
-        Extract Skills
-      </Button>
+
+      {/* Heatmap section */}
+      {
+        initialHeatmapHandler && 
+      <div className="mt-8 w-full">
+        {loadingHeatmap ? (
+          <p>Loading analysis data...</p>
+        ) : heatmapData.length > 0 ? (
+          <Heatmap analysisResults={heatmapData} />
+        ) : (
+          <p>{heatmapMessage}</p>
+        )}
+      </div>
+      }
     </div>
   );
 };
