@@ -1,10 +1,11 @@
-import React, { useState, useEffect, Dispatch, SetStateAction } from "react";
-import axios from "axios";
-import { FileChange, Commit, AnalysisResult } from "@/lib/types";
-import { ButtonLoading } from "@/components/ButtonLoading";
-import { Button } from "@/components/ui/button";
-import { GitCommitVertical, BarChartHorizontal } from "lucide-react";
-import Heatmap from "@/components/Heatmap"; // Assuming you have a Heatmap component
+import React, { useState, Dispatch, SetStateAction } from 'react';
+import axios from 'axios';
+import { FileChange, Commit, AnalysisResult } from '@/lib/types';
+import { ButtonLoading } from '@/components/ButtonLoading';
+import { Button } from '@/components/ui/button';
+import { GitCommitVertical, BarChartHorizontal } from 'lucide-react';
+import Heatmap from '@/components/Heatmap'; // Assuming you have a Heatmap component
+import ChartModal from '@/components/ChartModal'; // Import the ChartModal component
 
 interface FormProps {
   commits: Commit[];
@@ -26,7 +27,7 @@ const Form: React.FC<FormProps> = ({
   loading,
   setLoading,
   setAnalysisResults,
-  initialRepoUrl = "", // Default to empty string if not provided
+  initialRepoUrl = "",
   setResultsOfAnalysis,
 }) => {
   const [repoUrl, setRepoUrl] = useState<string>(initialRepoUrl);
@@ -36,32 +37,29 @@ const Form: React.FC<FormProps> = ({
   const [loadingHeatmap, setLoadingHeatmap] = useState<boolean>(false);
   const [heatmapMessage, setHeatmapMessage] = useState<string>("No data available");
   const [initialHeatmapHandler, setInitialHeatmapHandler] = useState<boolean>(false);
+  const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
+
+  // State for timestamps data
+  const [timestamps, setTimestamps] = useState<string[]>([]);
 
   // Update repoUrl if initialRepoUrl prop changes
-  useEffect(() => {
+  React.useEffect(() => {
     setRepoUrl(initialRepoUrl);
   }, [initialRepoUrl]);
-
-  // Fetch heatmap data when repoUrl changes
-  useEffect(() => {
-    if (repoUrl) {
-      fetchHeatmapData(repoUrl);
-    }
-  }, [repoUrl]);
 
   const fetchHeatmapData = async (repoURL: string) => {
     setLoadingHeatmap(true);
     setInitialHeatmapHandler(true);
     try {
       const response = await axios.get(`http://localhost:5000/analyzedb?repo_name=${getRepoNameFromUrl(repoURL)}`);
-      var analysisResults = response.data || [];
+      const analysisResults = response.data || [];
       setLoadingHeatmap(false);
 
       if (analysisResults.length > 0) {
         setHeatmapData(analysisResults);
       } else {
         setHeatmapMessage("No analysis data found for this repository.");
-        setHeatmapData([])
+        setHeatmapData([]);
       }
     } catch (error) {
       console.error("Error fetching analysis data:", error);
@@ -71,13 +69,8 @@ const Form: React.FC<FormProps> = ({
   };
 
   function getRepoNameFromUrl(url: string) {
-    // Αφαιρούμε το ".git" αν υπάρχει στο τέλος του URL
     const cleanedUrl = url.endsWith('.git') ? url.slice(0, -4) : url;
-
-    // Χρησιμοποιούμε την μέθοδο split για να πάρουμε το τελευταίο κομμάτι του URL
     const parts = cleanedUrl.split('/');
-
-    // Επιστρέφουμε το τελευταίο στοιχείο, που είναι το όνομα του repository
     return parts[parts.length - 1];
   }
 
@@ -96,8 +89,6 @@ const Form: React.FC<FormProps> = ({
       });
 
       const fileChanges: FileChange[] = response.data;
-
-      // Group file changes by commit SHA
       const commits: Commit[] = [];
       const grouped = fileChanges.reduce((acc, fileChange) => {
         if (!acc[fileChange.sha]) {
@@ -117,12 +108,31 @@ const Form: React.FC<FormProps> = ({
       }
 
       setCommits(commits);
-
-      // Calculate the total number of files
       const totalFiles = fileChanges.length;
       setTotalFiles(totalFiles);
+      // Fetch commit timestamps
+      await fetchCommitTimestamps(repoUrl);
     } catch (error) {
       console.error("Error fetching commits:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchCommitTimestamps = async (repoURL: string) => {
+    setLoading(true);
+    try {
+      const response = await axios.get(`http://localhost:5000/historytime`, {
+        params: { repo_url: repoURL },
+      });
+
+      if (response.data && response.data.commit_dates) {
+        setTimestamps(response.data.commit_dates); // Update the timestamps state
+      } else {
+        console.error("No commit dates found in response");
+      }
+    } catch (error) {
+      console.error("Error fetching commit timestamps:", error);
     } finally {
       setLoading(false);
     }
@@ -168,6 +178,29 @@ const Form: React.FC<FormProps> = ({
     handleExtractSkills();
   };
 
+  // Prepare data for the chart
+  const chartData = {
+    labels: timestamps.map(timestamp => new Date(timestamp).toLocaleString()),
+    datasets: [
+      {
+        label: 'Commits over time',
+        data: timestamps.map((_, index) => ({ x: new Date(timestamps[index]), y: 1 })), // Use the correct timestamp for each point
+        borderColor: 'rgba(75, 192, 192, 1)',
+        backgroundColor: 'rgba(75, 192, 192, 0.2)',
+        fill: false,
+        tension: 0.1,
+      },
+    ],
+  };
+
+  // Fetch data for the chart when the modal opens
+  const handleOpenModal = async () => {
+    if (!isModalOpen) {
+      await fetchCommitTimestamps(repoUrl); // Ensure timestamps are fetched
+      setIsModalOpen(true);
+    }
+  };
+
   return (
     <div className="flex flex-col gap-4 items-start">
       <form onSubmit={(e) => e.preventDefault()} className="space-y-4 w-full">
@@ -175,12 +208,13 @@ const Form: React.FC<FormProps> = ({
           <label htmlFor="repoUrl" className="block text-gray-700 mb-2">
             GitHub Repository URL
           </label>
-          <div
+          <input
+            type="text"
             id="repoUrl"
-            className="w-full p-2 border border-gray-300 rounded bg-gray-100"
-          >
-            {repoUrl}
-          </div>
+            value={repoUrl}
+            onChange={(e) => setRepoUrl(e.target.value)}
+            className="w-full p-2 border border-gray-300 rounded"
+          />
         </div>
         <div>
           <label htmlFor="commitLimit" className="block text-gray-700 mb-2">
@@ -198,30 +232,42 @@ const Form: React.FC<FormProps> = ({
         {loading ? (
           <ButtonLoading />
         ) : (
-          <Button
-            type="button"
-            onClick={handleAnalysis}
-            disabled={!repoUrl || analysisStarted}
-          >
-            <GitCommitVertical className="mr-2 h-4 w-4" />
-            Start Analysis
-          </Button>
+          <>
+            <Button
+              type="button"
+              onClick={handleAnalysis}
+              disabled={!repoUrl || analysisStarted}
+            >
+              <GitCommitVertical className="mr-2 h-4 w-4" />
+              Start Analysis
+            </Button>
+            <Button
+              type="button"
+              onClick={handleOpenModal}
+              disabled={!repoUrl}
+            >
+              <BarChartHorizontal className="mr-2 h-4 w-4" />
+              Show History
+            </Button>
+          </>
         )}
       </form>
 
       {/* Heatmap section */}
-      {
-        initialHeatmapHandler && 
-      <div className="mt-8 w-full">
-        {loadingHeatmap ? (
-          <p>Loading analysis data...</p>
-        ) : heatmapData.length > 0 ? (
-          <Heatmap analysisResults={heatmapData} />
-        ) : (
-          <p>{heatmapMessage}</p>
-        )}
-      </div>
-      }
+      {initialHeatmapHandler && (
+        <div className="mt-8 w-full">
+          {loadingHeatmap ? (
+            <p>Loading analysis data...</p>
+          ) : heatmapData.length > 0 ? (
+            <Heatmap analysisResults={heatmapData} />
+          ) : (
+            <p>{heatmapMessage}</p>
+          )}
+        </div>
+      )}
+
+      {/* Modal for displaying chart */}
+      <ChartModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} timestamps={timestamps} />
     </div>
   );
 };
