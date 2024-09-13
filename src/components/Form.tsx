@@ -38,6 +38,7 @@ const Form: React.FC<FormProps> = ({
   const [heatmapMessage, setHeatmapMessage] = useState<string>("No data available");
   const [initialHeatmapHandler, setInitialHeatmapHandler] = useState<boolean>(false);
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
+  const [analyzedTimestamps, setAnalyzedTimestamps] = useState<string[]>([]);
 
   // State for timestamps data
   const [timestamps, setTimestamps] = useState<string[]>([]);
@@ -138,6 +139,20 @@ const Form: React.FC<FormProps> = ({
     }
   };
 
+  const fetchAnalyzedCommitTimestamps = async (repoURL: string) => {
+    try {
+      const response = await axios.get(`http://localhost:5000/timestamps?repo_name=${getRepoNameFromUrl(repoURL)}`);
+      if (response.data && response.data.length > 0) {
+        return response.data;
+      } else {
+        return [];
+      }
+    } catch (error) {
+      console.error('Error fetching analyzed commit timestamps:', error);
+      return [];
+    }
+  };
+
   const handleExtractSkills = () => {
     setInitialHeatmapHandler(false);
     setAnalysisStarted(true);
@@ -197,6 +212,8 @@ const Form: React.FC<FormProps> = ({
   const handleOpenModal = async () => {
     if (!isModalOpen) {
       await fetchCommitTimestamps(repoUrl); // Ensure timestamps are fetched
+      const analyzedTimestamps = await fetchAnalyzedCommitTimestamps(repoUrl);
+      setAnalyzedTimestamps(analyzedTimestamps)
       setIsModalOpen(true);
     }
   };
@@ -267,7 +284,13 @@ const Form: React.FC<FormProps> = ({
       )}
 
       {/* Modal for displaying chart */}
-      <ChartModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} timestamps={timestamps} />
+      
+      <ChartModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        timestamps={timestamps}
+        analyzedTimestamps={analyzedTimestamps}
+      />
     </div>
   );
 };

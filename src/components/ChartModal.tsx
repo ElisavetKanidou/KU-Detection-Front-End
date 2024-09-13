@@ -20,27 +20,49 @@ interface ModalProps {
   isOpen: boolean;
   onClose: () => void;
   timestamps: string[];
+  analyzedTimestamps: string[];
 }
 
-const ChartModal: React.FC<ModalProps> = ({ isOpen, onClose, timestamps }) => {
+const ChartModal: React.FC<ModalProps> = ({ isOpen, onClose, timestamps, analyzedTimestamps }) => {
   if (!isOpen) return null;
+
+  // Function to ensure consistent ISO date format
+  const convertToISO = (dateString: string) => {
+    return dateString.includes('T') ? dateString : dateString.replace(' ', 'T');
+  };
 
   // Aggregate commits by date
   const dateMap = timestamps.reduce((acc, timestamp) => {
-    const date = new Date(timestamp).toISOString().split('T')[0]; // YYYY-MM-DD format
+    const date = new Date(convertToISO(timestamp)).toISOString().split('T')[0]; // YYYY-MM-DD format
     acc[date] = (acc[date] || 0) + 1;
     return acc;
   }, {} as { [date: string]: number });
+
+  // Aggregate analyzed commits by date
+  const analyzedDateMap = analyzedTimestamps.reduce((acc, timestamp) => {
+    const date = new Date(convertToISO(timestamp)).toISOString().split('T')[0]; // YYYY-MM-DD format
+    acc[date] = (acc[date] || 0) + 1;
+    return acc;
+  }, {} as { [date: string]: number });
+
+    // Data for commits
+    const commitData = Object.keys(dateMap).map(date => ({
+      x: new Date(date),
+      y: dateMap[date],
+    }));
+  
+    // Data for analyzed commits
+    const analyzedData = Object.keys(analyzedDateMap).map(date => ({
+      x: new Date(date),
+      y: analyzedDateMap[date],
+    }));
 
   const chartData = {
     labels: Object.keys(dateMap).map(date => new Date(date)),
     datasets: [
       {
         label: 'Commits over time',
-        data: Object.keys(dateMap).map(date => ({
-          x: new Date(date),
-          y: dateMap[date],
-        })),
+        data: commitData,
         borderColor: '#0d3a6a', // Dark blue for border
         backgroundColor: 'rgba(13, 58, 106, 0.6)', // Dark blue with some transparency
         fill: false,
@@ -48,6 +70,16 @@ const ChartModal: React.FC<ModalProps> = ({ isOpen, onClose, timestamps }) => {
         pointRadius: 6, // Slightly larger size for visibility
         pointHoverRadius: 8, // Larger size on hover
         borderWidth: 0,
+      },
+      {
+        label: 'Analyzed Commits',
+        data: analyzedData,
+        borderColor: '#c72424', // Red color for analyzed commits
+        backgroundColor: 'rgba(199, 36, 36, 0.6)', // Red with transparency
+        fill: false,
+        pointRadius: 6, // Slightly larger size for visibility
+        pointHoverRadius: 8, // Larger size on hover
+        borderWidth: 0, // No line for analyzed commits
       },
     ],
   };
