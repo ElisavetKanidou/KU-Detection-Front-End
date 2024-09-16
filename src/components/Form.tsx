@@ -48,6 +48,12 @@ const Form: React.FC<FormProps> = ({
     setRepoUrl(initialRepoUrl);
   }, [initialRepoUrl]);
 
+  React.useEffect(() => {
+    if (repoUrl) {
+      fetchHeatmapData(repoUrl);
+    }
+  }, [repoUrl]);
+
   const fetchHeatmapData = async (repoURL: string) => {
     setLoadingHeatmap(true);
     setInitialHeatmapHandler(true);

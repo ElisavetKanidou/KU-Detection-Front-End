@@ -2,7 +2,6 @@ import React from 'react';
 import { Line } from 'react-chartjs-2';
 import 'chartjs-adapter-date-fns';
 import { ChartOptions, TooltipItem } from 'chart.js';
-
 import {
   Chart as ChartJS,
   PointElement,
@@ -23,63 +22,70 @@ interface ModalProps {
   analyzedTimestamps: string[];
 }
 
+// Function to format date as dd/MM/yyyy
+function formatDate(dateOld: string) {
+  const date = new Date(dateOld);
+  const day = String(date.getDate()).padStart(2, '0');
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const year = date.getFullYear();
+  return `${day}/${month}/${year}`;
+}
+
 const ChartModal: React.FC<ModalProps> = ({ isOpen, onClose, timestamps, analyzedTimestamps }) => {
   if (!isOpen) return null;
 
-  // Function to ensure consistent ISO date format
+  // Ensure the date string is parsed correctly
   const convertToISO = (dateString: string) => {
     return dateString.includes('T') ? dateString : dateString.replace(' ', 'T');
   };
 
-  // Aggregate commits by date
-  const dateMap = timestamps.reduce((acc, timestamp) => {
-    const date = new Date(convertToISO(timestamp)).toISOString().split('T')[0]; // YYYY-MM-DD format
-    acc[date] = (acc[date] || 0) + 1;
-    return acc;
-  }, {} as { [date: string]: number });
+  // Group commits by day
+  const aggregateByDate = (timestamps: string[]) => {
+    return timestamps.reduce((acc, timestamp) => {
+      const date = new Date(convertToISO(timestamp)).toLocaleDateString('en-GB'); // Force dd/MM/yyyy format
+      acc[date] = (acc[date] || 0) + 1;
+      return acc;
+    }, {} as { [date: string]: number });
+  };
 
-  // Aggregate analyzed commits by date
-  const analyzedDateMap = analyzedTimestamps.reduce((acc, timestamp) => {
-    const date = new Date(convertToISO(timestamp)).toISOString().split('T')[0]; // YYYY-MM-DD format
-    acc[date] = (acc[date] || 0) + 1;
-    return acc;
-  }, {} as { [date: string]: number });
+  const dateMap = aggregateByDate(timestamps);
+  const analyzedDateMap = aggregateByDate(analyzedTimestamps);
 
-    // Data for commits
-    const commitData = Object.keys(dateMap).map(date => ({
-      x: new Date(date),
-      y: dateMap[date],
-    }));
-  
-    // Data for analyzed commits
-    const analyzedData = Object.keys(analyzedDateMap).map(date => ({
-      x: new Date(date),
-      y: analyzedDateMap[date],
-    }));
+  // Data for commits
+  const commitData = Object.keys(dateMap).map(date => ({
+    x: new Date(date.split('/').reverse().join('-')), // Convert back to YYYY-MM-DD for chart.js
+    y: dateMap[date],
+  }));
+
+  // Data for analyzed commits
+  const analyzedData = Object.keys(analyzedDateMap).map(date => ({
+    x: new Date(date.split('/').reverse().join('-')),
+    y: analyzedDateMap[date],
+  }));
 
   const chartData = {
-    labels: Object.keys(dateMap).map(date => new Date(date)),
+    labels: Object.keys(dateMap).map(date => formatDate(date)),
     datasets: [
       {
         label: 'Commits over time',
         data: commitData,
-        borderColor: '#0d3a6a', // Dark blue for border
-        backgroundColor: 'rgba(13, 58, 106, 0.6)', // Dark blue with some transparency
+        borderColor: '#0d3a6a',
+        backgroundColor: 'rgba(13, 58, 106, 0.6)',
         fill: false,
         tension: 0,
-        pointRadius: 6, // Slightly larger size for visibility
-        pointHoverRadius: 8, // Larger size on hover
+        pointRadius: 6,
+        pointHoverRadius: 8,
         borderWidth: 0,
       },
       {
         label: 'Analyzed Commits',
         data: analyzedData,
-        borderColor: '#c72424', // Red color for analyzed commits
-        backgroundColor: 'rgba(199, 36, 36, 0.6)', // Red with transparency
+        borderColor: '#c72424',
+        backgroundColor: 'rgba(199, 36, 36, 0.6)',
         fill: false,
-        pointRadius: 6, // Slightly larger size for visibility
-        pointHoverRadius: 8, // Larger size on hover
-        borderWidth: 0, // No line for analyzed commits
+        pointRadius: 6,
+        pointHoverRadius: 8,
+        borderWidth: 0,
       },
     ],
   };
@@ -90,7 +96,7 @@ const ChartModal: React.FC<ModalProps> = ({ isOpen, onClose, timestamps, analyze
         type: 'time',
         time: {
           unit: 'day',
-          tooltipFormat: 'Pp', // 'Pp' for a short date and time format, adjust as needed
+          tooltipFormat: 'dd/MM/yyyy',
         },
         title: {
           display: true,
@@ -128,14 +134,9 @@ const ChartModal: React.FC<ModalProps> = ({ isOpen, onClose, timestamps, analyze
         callbacks: {
           label: (context: TooltipItem<'line'>) => {
             const date = new Date(context.parsed.x as number);
-            const formattedDate = date.toLocaleString('en-US', {
-              year: 'numeric',
-              month: 'long',
-              day: 'numeric',
-              hour: '2-digit',
-              minute: '2-digit',
-              second: '2-digit',
-            });
+            const formattedDate = `${String(date.getDate()).padStart(2, '0')}/${
+              String(date.getMonth() + 1).padStart(2, '0')
+            }/${date.getFullYear()}`;
             const commits = context.parsed.y as number;
             return `Date: ${formattedDate}, Commits: ${commits}`;
           },
