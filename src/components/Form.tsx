@@ -255,7 +255,7 @@ const Form: React.FC<FormProps> = ({
         {loading ? (
           <ButtonLoading />
         ) : (
-          <>
+          <div className="flex space-x-4"> {/* Προσθέτω αυτή την γραμμή */}
             <Button
               type="button"
               onClick={handleAnalysis}
@@ -272,7 +272,7 @@ const Form: React.FC<FormProps> = ({
               <BarChartHorizontal className="mr-2 h-4 w-4" />
               Show History
             </Button>
-          </>
+          </div> 
         )}
       </form>
 
