@@ -188,6 +188,11 @@ const App: React.FC = () => {
     setResultsOfAnalysis(false); // Reset analysis results when closing the screen
   };
 
+  const handleCloseChart = () => {
+    //setShowScreen(false);
+    setShowChart(false)
+  };
+
   const handleViewOrganizationSkills = async () => {
     try {
       const response = await fetch('http://localhost:5000/detected_kus');
@@ -274,7 +279,7 @@ const App: React.FC = () => {
             <div className="mt-8">
               <Bar data={chartData} />
               <button 
-                onClick={handleCloseScreen} 
+                onClick={handleCloseChart} 
                 className="mt-4 px-4 py-2 bg-[#c72424] text-white rounded"
               >
                 Close Chart
