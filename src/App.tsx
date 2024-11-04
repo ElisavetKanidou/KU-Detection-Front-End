@@ -68,7 +68,7 @@ const App: React.FC = () => {
 
   const fetchRepos = async () => {
     try {
-      const response = await fetch('http://localhost:5000/repos');
+      const response = await fetch(import.meta.env.VITE_API_URL+'/repos');
       const data = await response.json();
       setRepos(data);
     } catch (error) {
@@ -78,7 +78,7 @@ const App: React.FC = () => {
 
   const addRepo = async (newRepo: Repo) => {
     try {
-      const response = await fetch('http://localhost:5000/repos', {
+      const response = await fetch(import.meta.env.VITE_API_URL+'/repos', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -110,7 +110,7 @@ const App: React.FC = () => {
     // try {
       
     console.log("llllll")
-    //   const response = await fetch(`http://localhost:5000/api/commits?repo=${encodeURIComponent(repoUrl)}&limit=${commitLimit}`);
+    //   const response = await fetch(import.meta.env.VITE_API_URL+`/api/commits?repo=${encodeURIComponent(repoUrl)}&limit=${commitLimit}`);
   
     //   if (!response.ok) {
     //     throw new Error(`HTTP error! Status: ${response.status}`);
@@ -135,7 +135,7 @@ const App: React.FC = () => {
   const extractFiles = async () => {
     // setLoading(true);
     // try {
-    //   const response = await fetch('http://localhost:5000/api/files');
+    //   const response = await fetch(import.meta.env.VITE_API_URL+'/api/files');
     //   const data = await response.json();
     //   setFiles(data);
     // } catch (error) {
@@ -163,7 +163,7 @@ const App: React.FC = () => {
  
   const handleDeleteRepo = async (repoName: string) => {
     try {
-      const response = await fetch(`http://localhost:5000/delete_repo/${encodeURIComponent(repoName)}`, {
+      const response = await fetch(import.meta.env.VITE_API_URL+`/delete_repo/${encodeURIComponent(repoName)}`, {
         method: 'DELETE',
       });
 
@@ -195,7 +195,7 @@ const App: React.FC = () => {
 
   const handleViewOrganizationSkills = async () => {
     try {
-      const response = await fetch('http://localhost:5000/detected_kus');
+      const response = await fetch(import.meta.env.VITE_API_URL+'/detected_kus');
       
       // Έλεγχος αν η απάντηση είναι επιτυχής
       if (!response.ok) {
