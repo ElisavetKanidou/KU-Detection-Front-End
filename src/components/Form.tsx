@@ -58,7 +58,7 @@ const Form: React.FC<FormProps> = ({
     setLoadingHeatmap(true);
     setInitialHeatmapHandler(true);
     try {
-      const response = await axios.get(`http://localhost:5000/analyzedb?repo_name=${getRepoNameFromUrl(repoURL)}`);
+      const response = await axios.get(import.meta.env.VITE_API_URL+`/analyzedb?repo_name=${getRepoNameFromUrl(repoURL)}`);
       const analysisResults = response.data || [];
       setLoadingHeatmap(false);
 
@@ -90,7 +90,7 @@ const Form: React.FC<FormProps> = ({
 
     try {
       const limit = commitLimit ? parseInt(commitLimit) : null;
-      const response = await axios.post("http://localhost:5000/commits", {
+      const response = await axios.post(import.meta.env.VITE_API_URL+"/commits", {
         repo_url: repoUrl,
         limit: limit,
       });
@@ -129,7 +129,7 @@ const Form: React.FC<FormProps> = ({
   const fetchCommitTimestamps = async (repoURL: string) => {
     setLoading(true);
     try {
-      const response = await axios.get(`http://localhost:5000/historytime`, {
+      const response = await axios.get(import.meta.env.VITE_API_URL+'/historytime', {
         params: { repo_url: repoURL },
       });
 
@@ -147,7 +147,7 @@ const Form: React.FC<FormProps> = ({
 
   const fetchAnalyzedCommitTimestamps = async (repoURL: string) => {
     try {
-      const response = await axios.get(`http://localhost:5000/timestamps?repo_name=${getRepoNameFromUrl(repoURL)}`);
+      const response = await axios.get(import.meta.env.VITE_API_URL+`/timestamps?repo_name=${getRepoNameFromUrl(repoURL)}`);
       if (response.data && response.data.length > 0) {
         return response.data;
       } else {
@@ -167,7 +167,7 @@ const Form: React.FC<FormProps> = ({
     setResultsOfAnalysis(true);
 
     const eventSource = new EventSource(
-      `http://localhost:5000/analyze?repo_url=${encodeURIComponent(repoUrl)}`
+      import.meta.env.VITE_API_URL+`/analyze?repo_url=${encodeURIComponent(repoUrl)}`
     );
 
     eventSource.onmessage = (event: MessageEvent) => {
