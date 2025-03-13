@@ -21,8 +21,8 @@ interface CommitsScreenProps {
   setTotalFiles: React.Dispatch<React.SetStateAction<number>>;
   setLoading: React.Dispatch<React.SetStateAction<boolean>>;
   setAnalysisResults: React.Dispatch<React.SetStateAction<AnalysisResult[]>>;
-  resultsOfAnalysis: boolean; // Prop to control the display of analysis results
-  setResultsOfAnalysis: React.Dispatch<React.SetStateAction<boolean>>; // Add this prop
+  resultsOfAnalysis: boolean;
+  setResultsOfAnalysis: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
 const CommitsScreen: React.FC<CommitsScreenProps> = ({
@@ -42,24 +42,25 @@ const CommitsScreen: React.FC<CommitsScreenProps> = ({
   setLoading,
   setAnalysisResults,
   resultsOfAnalysis,
-  setResultsOfAnalysis, // Destructure the new prop
+  setResultsOfAnalysis,
 }) => {
   return (
-    <div className="flex flex-col w-full h-full max-w-screen-lg mx-auto bg-white"> {/* Full width, centered horizontally */}
-      <div className="flex flex-col w-full gap-4 p-4"> {/* Top section with padding */}
+    <div className="flex flex-col w-full h-full max-w-screen-lg mx-auto bg-white">
+      <div className="flex flex-col w-full gap-4 p-4">
         <h1 className="text-2xl font-bold text-center">Git Commit Skill Extractor</h1>
         <Form
           commits={commits}
           setCommits={setCommits}
+          progress={progress}
           setProgress={setProgress}
           setTotalFiles={setTotalFiles}
           loading={loading}
           setLoading={setLoading}
           setAnalysisResults={setAnalysisResults}
           initialRepoUrl={repoUrl}
-          setResultsOfAnalysis={setResultsOfAnalysis} // Pass the setter function
+          setResultsOfAnalysis={setResultsOfAnalysis}
         />
-        {resultsOfAnalysis && ( // Render only if resultsOfAnalysis is true
+        {resultsOfAnalysis && (
           <div>
             {totalFiles > 0 && (
               <div className="flex gap-2 items-center justify-between">

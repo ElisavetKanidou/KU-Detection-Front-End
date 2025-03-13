@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import './Modal.css'; // Σιγουρευτείτε ότι έχετε το Modal.css αρχείο με το ενημερωμένο CSS
+import './Modal.css'; // Σιγουρευτείτε ότι έχετε το Modal.css αρχείο
 
 const backendAPI = "http://localhost:5000";
 
@@ -28,16 +28,51 @@ const RepoForm: React.FC<RepoFormProps> = ({
     comments: comments || '',
   });
 
+  // Νέα συνάρτηση για τον χειρισμό της αλλαγής στο URL
+  const handleUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const urlValue = e.target.value;
+    let newRepoName = '';
+
+    // Εξαγωγή του ονόματος από το URL (αν υπάρχει)
+    if (urlValue) {
+      const parts = urlValue.split('/');
+      newRepoName = parts[parts.length - 1]; // Παίρνουμε το τελευταίο τμήμα
+    }
+
+    setFormData({
+      ...formData,
+      url: urlValue,
+      repo_name: newRepoName, // Ενημερώνουμε αυτόματα το repo_name
+    });
+  };
+
+    //Χρησιμοποιούμε useEffect για να αλλάξουμε το formData.repo_name στην επεξεργασία.
+    useEffect(() => {
+        if (url) {
+            const parts = url.split('/');
+            const newRepoName = parts[parts.length - 1];
+             setFormData(prevFormData => ({
+                ...prevFormData,
+                repo_name: newRepoName
+            }));
+        }
+    }, [url]);
+
+
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
+     //Αποτρέπει την επεξεργασία του repo_name
+     if (name !== 'repo_name') {
+        setFormData({ ...formData, [name]: value });
+     }
   };
 
   const handleCreate = async () => {
     try {
       const response = await axios.post(`${backendAPI}/repos`, formData);
       console.log('Success:', response.data);
-      onSave(); // Trigger the onSave callback after successful creation
+      onSave(); // Trigger the onSave callback
     } catch (error) {
       console.error('Error:', error);
       alert('An error occurred while creating the repository.');
@@ -52,7 +87,7 @@ const RepoForm: React.FC<RepoFormProps> = ({
         comments: formData.comments
       });
       console.log('Success:', response.data);
-      onSave(); // Trigger the onSave callback after successful update
+      onSave(); // Trigger the onSave callback
     } catch (error) {
       console.error('Error:', error);
       alert('An error occurred while updating the repository.');
@@ -61,11 +96,11 @@ const RepoForm: React.FC<RepoFormProps> = ({
 
   const handleSave = () => {
     if (repoName) {
-      handleUpdate(); // Call update function if repoName is provided
+      handleUpdate();
     } else {
-      handleCreate(); // Call create function if repoName is not provided
+      handleCreate();
     }
-    onClose(); // Close the form after save
+    onClose();
   };
 
   return (
@@ -76,21 +111,26 @@ const RepoForm: React.FC<RepoFormProps> = ({
           <button className="modal-close" onClick={onClose}>X</button>
         </div>
         <div className="modal-body">
-          <input
-            type="text"
-            name="repo_name"
-            value={formData.repo_name}
-            onChange={handleInputChange}
-            placeholder="Repository Name"
-            required
-          />
+          {/* URL input field *πρώτο* */}
           <input
             type="text"
             name="url"
             value={formData.url}
-            onChange={handleInputChange}
+            onChange={handleUrlChange}  // Χρησιμοποιούμε τον νέο handler
             placeholder="URL"
+            required
           />
+          {/* Repository Name input field *δεύτερο* και disabled */}
+          <input
+            type="text"
+            name="repo_name"
+            value={formData.repo_name}
+            //onChange={handleInputChange} //Δεν χρειαζόμαστε πια onChange εδώ.
+            placeholder="Repository Name"
+            disabled // Το κάνουμε disabled
+            required
+          />
+
           <textarea
             name="description"
             value={formData.description}
