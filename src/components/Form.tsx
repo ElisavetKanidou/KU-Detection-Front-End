@@ -121,7 +121,7 @@ const Form: React.FC<FormProps> = ({
         setInitialHeatmapHandler(true);
         try {
             // Χρησιμοποιούμε repoURL και τη συνάρτηση getRepoNameFromUrl
-            const response = await axios.get(`http://localhost:5000/analyzedb?repo_name=${getRepoNameFromUrl(repoURL)}`);
+            const response = await axios.get(import.meta.env.VITE_API_URL+`/analyzedb?repo_name=${getRepoNameFromUrl(repoURL)}`);
             const analysisResults = response.data || [];
             setLoadingHeatmap(false);
             if (analysisResults.length > 0) {
@@ -155,7 +155,7 @@ const Form: React.FC<FormProps> = ({
 
         try {
             const limit = commitLimit ? parseInt(commitLimit) : null;
-            const response = await axios.post("http://localhost:5000/commits", {
+            const response = await axios.post(import.meta.env.VITE_API_URL+"/commits", {
                 repo_url: repoUrl,
                 limit: limit,
             });
@@ -192,7 +192,7 @@ const Form: React.FC<FormProps> = ({
     const fetchCommitTimestamps = async (repoURL: string) => {
         setLoading(true);
         try {
-            const response = await axios.get(`http://localhost:5000/historytime`, {
+            const response = await axios.get(import.meta.env.VITE_API_URL+`/historytime`, {
                 params: { repo_url: repoURL },
             });
 
@@ -210,7 +210,7 @@ const Form: React.FC<FormProps> = ({
 
     const fetchAnalyzedCommitTimestamps = async (repoURL: string) => {
         try {
-            const response = await axios.get(`http://localhost:5000/timestamps?repo_name=${getRepoNameFromUrl(repoURL)}`);
+            const response = await axios.get(import.meta.env.VITE_API_URL+`/timestamps?repo_name=${getRepoNameFromUrl(repoURL)}`);
             return response.data || [];
         } catch (error) {
             console.error('Error fetching analyzed commit timestamps:', error);
@@ -237,7 +237,7 @@ const Form: React.FC<FormProps> = ({
 
     try {
         // 2. ΔΗΜΙΟΥΡΓΙΑ EVENTSOUCE ΓΙΑ ΤΟ ΣΥΓΚΕΚΡΙΜΕΝΟ repoUrl
-        const eventSource = new EventSource(`http://localhost:5000/analyze?repo_url=${encodeURIComponent(repoUrl)}`);
+        const eventSource = new EventSource(import.meta.env.VITE_API_URL+`/analyze?repo_url=${encodeURIComponent(repoUrl)}`);
 
         // 3. EVENT HANDLERS
         eventSource.onmessage = (event) => {

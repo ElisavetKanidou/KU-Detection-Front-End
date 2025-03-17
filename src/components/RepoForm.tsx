@@ -2,8 +2,6 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import './Modal.css'; // Σιγουρευτείτε ότι έχετε το Modal.css αρχείο
 
-const backendAPI = "http://localhost:5000";
-
 interface RepoFormProps {
   repoName?: string;
   url?: string;
@@ -70,7 +68,7 @@ const RepoForm: React.FC<RepoFormProps> = ({
 
   const handleCreate = async () => {
     try {
-      const response = await axios.post(`${backendAPI}/repos`, formData);
+      const response = await axios.post(import.meta.env.VITE_API_URL+`/repos`, formData);
       console.log('Success:', response.data);
       onSave(); // Trigger the onSave callback
     } catch (error) {
@@ -81,7 +79,7 @@ const RepoForm: React.FC<RepoFormProps> = ({
 
   const handleUpdate = async () => {
     try {
-      const response = await axios.put(`${backendAPI}/repos/${formData.repo_name}`, {
+      const response = await axios.put(import.meta.env.VITE_API_URL+`/repos/${formData.repo_name}`, {
         url: formData.url,
         description: formData.description,
         comments: formData.comments
