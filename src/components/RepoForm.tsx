@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import './Modal.css'; // Σιγουρευτείτε ότι έχετε το Modal.css αρχείο
+import './Modal.css';
 
 interface RepoFormProps {
   repoName?: string;
   url?: string;
+  organization?: string; // --- ΠΡΟΣΘΗΚΗ ---
   description?: string;
   comments?: string;
   onClose: () => void;
@@ -14,6 +15,7 @@ interface RepoFormProps {
 const RepoForm: React.FC<RepoFormProps> = ({
   repoName,
   url,
+  organization, // --- ΠΡΟΣΘΗΚΗ ---
   description,
   comments,
   onClose,
@@ -22,45 +24,42 @@ const RepoForm: React.FC<RepoFormProps> = ({
   const [formData, setFormData] = useState({
     repo_name: repoName || '',
     url: url || '',
+    organization: organization || '', // --- ΠΡΟΣΘΗΚΗ ---
     description: description || '',
     comments: comments || '',
   });
 
-  // Νέα συνάρτηση για τον χειρισμό της αλλαγής στο URL
   const handleUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const urlValue = e.target.value;
-    let newRepoName = '';
+    let newRepoName = formData.repo_name;
 
-    // Εξαγωγή του ονόματος από το URL (αν υπάρχει)
-    if (urlValue) {
+    if (urlValue && !repoName) { // Ενημέρωσε το όνομα μόνο κατά τη δημιουργία
       const parts = urlValue.split('/');
-      newRepoName = parts[parts.length - 1]; // Παίρνουμε το τελευταίο τμήμα
+      const lastPart = parts[parts.length - 1];
+      newRepoName = lastPart.endsWith('.git') ? lastPart.slice(0, -4) : lastPart;
     }
 
     setFormData({
       ...formData,
       url: urlValue,
-      repo_name: newRepoName, // Ενημερώνουμε αυτόματα το repo_name
+      repo_name: newRepoName,
     });
   };
 
-    //Χρησιμοποιούμε useEffect για να αλλάξουμε το formData.repo_name στην επεξεργασία.
-    useEffect(() => {
-        if (url) {
-            const parts = url.split('/');
-            const newRepoName = parts[parts.length - 1];
-             setFormData(prevFormData => ({
-                ...prevFormData,
-                repo_name: newRepoName
-            }));
-        }
-    }, [url]);
-
-
+  useEffect(() => {
+    if (repoName) { // Μόνο για επεξεργασία
+        setFormData({
+            repo_name: repoName,
+            url: url || '',
+            organization: organization || '', // --- ΠΡΟΣΘΗΚΗ ---
+            description: description || '',
+            comments: comments || ''
+        });
+    }
+  }, [repoName, url, organization, description, comments]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-     //Αποτρέπει την επεξεργασία του repo_name
      if (name !== 'repo_name') {
         setFormData({ ...formData, [name]: value });
      }
@@ -68,9 +67,10 @@ const RepoForm: React.FC<RepoFormProps> = ({
 
   const handleCreate = async () => {
     try {
-      const response = await axios.post(import.meta.env.VITE_API_URL+`/repos`, formData);
+      // Στέλνουμε ολόκληρο το formData που περιλαμβάνει και το organization
+      const response = await axios.post(import.meta.env.VITE_API_URL + `/repos`, formData);
       console.log('Success:', response.data);
-      onSave(); // Trigger the onSave callback
+      onSave();
     } catch (error) {
       console.error('Error:', error);
       alert('An error occurred while creating the repository.');
@@ -79,13 +79,15 @@ const RepoForm: React.FC<RepoFormProps> = ({
 
   const handleUpdate = async () => {
     try {
-      const response = await axios.put(import.meta.env.VITE_API_URL+`/repos/${formData.repo_name}`, {
+      // --- ΔΙΟΡΘΩΣΗ: Στέλνουμε και το organization ---
+      const response = await axios.put(import.meta.env.VITE_API_URL + `/repos/${formData.repo_name}`, {
         url: formData.url,
+        organization: formData.organization,
         description: formData.description,
         comments: formData.comments
       });
       console.log('Success:', response.data);
-      onSave(); // Trigger the onSave callback
+      onSave();
     } catch (error) {
       console.error('Error:', error);
       alert('An error occurred while updating the repository.');
@@ -109,26 +111,30 @@ const RepoForm: React.FC<RepoFormProps> = ({
           <button className="modal-close" onClick={onClose}>X</button>
         </div>
         <div className="modal-body">
-          {/* URL input field *πρώτο* */}
           <input
             type="text"
             name="url"
             value={formData.url}
-            onChange={handleUrlChange}  // Χρησιμοποιούμε τον νέο handler
+            onChange={handleUrlChange}
             placeholder="URL"
             required
           />
-          {/* Repository Name input field *δεύτερο* και disabled */}
           <input
             type="text"
             name="repo_name"
             value={formData.repo_name}
-            //onChange={handleInputChange} //Δεν χρειαζόμαστε πια onChange εδώ.
             placeholder="Repository Name"
-            disabled // Το κάνουμε disabled
+            disabled
             required
           />
-
+          {/* --- ΠΡΟΣΘΗΚΗ ΠΕΔΙΟΥ ORGANIZATION --- */}
+          <input
+            type="text"
+            name="organization"
+            value={formData.organization}
+            onChange={handleInputChange}
+            placeholder="Organization"
+          />
           <textarea
             name="description"
             value={formData.description}

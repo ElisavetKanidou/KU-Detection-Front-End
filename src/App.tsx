@@ -31,6 +31,7 @@ import Heatmap from '@/components/Heatmap'; // Import Heatmap
 interface Repo {
     name: string;
     url: string;
+    organization?: string; // --- ΠΡΟΣΘΗΚΗ ---
     description?: string;
     comments?: string;
     created_at?: string;

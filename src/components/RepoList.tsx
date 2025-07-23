@@ -4,6 +4,7 @@ import '@fortawesome/fontawesome-free/css/all.min.css'; // Import font-awesome f
 interface Repo {
   name: string;
   url: string;
+  organization?: string; 
   description?: string;
   comments?: string;
   created_at?: string;
